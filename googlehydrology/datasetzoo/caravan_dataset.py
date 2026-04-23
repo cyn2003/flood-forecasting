@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import numpy as np
 import pandas as pd
 import xarray as xr
 
@@ -69,7 +70,7 @@ class Caravan(Multimet):
             target_features=hindcast_only_features,
             csv=self._cfg.load_as_csv,
         )
-        return [ds]
+        return [_floats_to_float32(ds)]
 
     def _load_forecast_features(self) -> list[xr.Dataset]:
         """Load forecast inputs as perfect forecasts from Caravan time series."""
@@ -93,7 +94,7 @@ class Caravan(Multimet):
 
         forecast_ds = xr.concat(lead_time_datasets, dim='lead_time')
         forecast_ds['lead_time'].attrs['units'] = 'timedelta (days)'
-        return [forecast_ds]
+        return [_floats_to_float32(forecast_ds)]
 
     def _load_static_features(self) -> xr.Dataset:
         """Load static attributes from local Caravan attribute files."""
@@ -105,9 +106,22 @@ class Caravan(Multimet):
 
     def _load_target_features(self) -> xr.Dataset:
         """Load target variables from local Caravan time-series files."""
-        return load_caravan_timeseries_together(
-            data_dir=self._targets_data_path,
-            basins=self._basins,
-            target_features=self._target_features,
-            csv=self._cfg.load_as_csv,
+        return _floats_to_float32(
+            load_caravan_timeseries_together(
+                data_dir=self._targets_data_path,
+                basins=self._basins,
+                target_features=self._target_features,
+                csv=self._cfg.load_as_csv,
+            )
         )
+
+
+def _floats_to_float32(ds: xr.Dataset) -> xr.Dataset:
+    """Cast floating data variables and coordinates to float32."""
+    for name in ds.data_vars:
+        if np.issubdtype(ds[name].dtype, np.floating):
+            ds[name] = ds[name].astype(np.float32)
+    for name in ds.coords:
+        if np.issubdtype(ds[name].dtype, np.floating):
+            ds[name] = ds[name].astype(np.float32)
+    return ds
