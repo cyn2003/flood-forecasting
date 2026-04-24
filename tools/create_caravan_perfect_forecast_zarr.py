@@ -112,12 +112,24 @@ def build_forecast_dataset(hindcast_ds: xr.Dataset, lead_time: int) -> xr.Datase
     )
 
 
+def rechunk_for_zarr(ds: xr.Dataset) -> xr.Dataset:
+    chunk_map = {}
+    if 'date' in ds.dims:
+        chunk_map['date'] = min(365, ds.sizes['date'])
+    if 'lead_time' in ds.dims:
+        chunk_map['lead_time'] = ds.sizes['lead_time']
+    if 'basin' in ds.dims:
+        chunk_map['basin'] = min(256, ds.sizes['basin'])
+    return ds.chunk(chunk_map)
+
+
 def write_zarr(ds: xr.Dataset, store: Path, overwrite: bool) -> None:
     if overwrite and store.exists():
         import shutil
 
         shutil.rmtree(store)
     store.parent.mkdir(parents=True, exist_ok=True)
+    ds = rechunk_for_zarr(ds)
     ds.to_zarr(store, mode='w', consolidated=False)
 
 
