@@ -196,7 +196,15 @@ def load_caravan_timeseries_together(
         raise FileNotFoundError(f'No basin file found at {path}.')
 
     def select(ds: xarray.Dataset) -> xarray.Dataset:
-        return ds[target_features]
+        ds = ds[target_features]
+        float_vars = [
+            name
+            for name in ds.data_vars
+            if np.issubdtype(ds[name].dtype, np.floating)
+        ]
+        if float_vars:
+            ds = ds.astype({name: np.float32 for name in float_vars})
+        return ds
 
     paths = tuple(map(basin_to_path, basins))
 
