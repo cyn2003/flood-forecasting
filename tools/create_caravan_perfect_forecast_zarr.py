@@ -106,7 +106,7 @@ def build_forecast_dataset(hindcast_ds: xr.Dataset, lead_time: int) -> xr.Datase
         lead_datasets.append(shifted)
 
     forecast_ds = xr.concat(lead_datasets, dim='lead_time')
-    forecast_ds['lead_time'].attrs['units'] = 'timedelta (days)'
+    forecast_ds['lead_time'].attrs.pop('units', None)
     return cast_float32(
         forecast_ds.transpose('date', 'lead_time', 'basin', ...)
     )
