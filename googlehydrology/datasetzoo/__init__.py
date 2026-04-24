@@ -16,7 +16,6 @@ from typing import Type
 
 from torch.utils.data import Dataset
 
-from googlehydrology.datasetzoo.caravan_dataset import Caravan
 from googlehydrology.datasetzoo.datasetregistry import DatasetRegistry
 from googlehydrology.datasetzoo.multimet import Multimet
 from googlehydrology.utils.config import Config
@@ -99,5 +98,4 @@ def register_dataset(key: str, new_class: Type):
 
 _datasetZooRegistry: DatasetRegistry = DatasetRegistry()
 
-_datasetZooRegistry.register_dataset_class('caravan', Caravan)
 _datasetZooRegistry.register_dataset_class('multimet', Multimet)
