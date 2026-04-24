@@ -78,7 +78,7 @@ def rename_variables(ds: xr.Dataset) -> xr.Dataset:
         elif name == 'temperature_2m_mean_mswx':
             rename_map[name] = 'mswx_temperature_2m_mean'
         else:
-            rename_map[name] = f'era5_land_{name}'
+            rename_map[name] = f'era5land_{name}'
     return ds.rename(rename_map)
 
 
