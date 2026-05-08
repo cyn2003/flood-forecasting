@@ -82,6 +82,15 @@ def rename_variables(ds: xr.Dataset) -> xr.Dataset:
     return ds.rename(rename_map)
 
 
+def split_by_product(ds: xr.Dataset) -> dict[str, xr.Dataset]:
+    grouped: dict[str, list[str]] = {}
+    for name in ds.data_vars:
+        product = name.split('_', 1)[0]
+        grouped.setdefault(product, []).append(name)
+
+    return {product: ds[variables] for product, variables in grouped.items()}
+
+
 def build_hindcast_dataset(
     caravan_root: Path,
     basins: list[str],
@@ -142,14 +151,29 @@ def main() -> None:
     )
     forecast_ds = build_forecast_dataset(hindcast_ds, args.lead_time)
 
-    hindcast_store = args.output_root / args.hindcast_product / 'timeseries.zarr'
-    forecast_store = args.output_root / args.forecast_product / 'timeseries.zarr'
+    hindcast_products = split_by_product(hindcast_ds)
+    forecast_products = split_by_product(forecast_ds)
 
-    write_zarr(hindcast_ds, hindcast_store, args.overwrite)
-    write_zarr(forecast_ds, forecast_store, args.overwrite)
+    for product, product_ds in hindcast_products.items():
+        hindcast_store = (
+            args.output_root
+            / args.hindcast_product
+            / product
+            / 'timeseries.zarr'
+        )
+        write_zarr(product_ds, hindcast_store, args.overwrite)
+        print(f'Wrote hindcast product {product} to {hindcast_store}')
 
-    print(f'Wrote hindcast product to {hindcast_store}')
-    print(f'Wrote forecast product to {forecast_store}')
+    for product, product_ds in forecast_products.items():
+        forecast_store = (
+            args.output_root
+            / args.forecast_product
+            / product
+            / 'timeseries.zarr'
+        )
+        write_zarr(product_ds, forecast_store, args.overwrite)
+        print(f'Wrote forecast product {product} to {forecast_store}')
+
     print(f'Basins: {len(basins)}')
     print(f'Variables: {", ".join(args.variables)}')
     print(f'Lead times: 1..{args.lead_time} days')
